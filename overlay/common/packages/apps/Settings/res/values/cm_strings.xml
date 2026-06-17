@@ -270,8 +270,8 @@
     <string name="show_dev_already_cm">No need, you have already enabled development settings.</string>
 
     <!-- Device Info screen. BloomOS legal. -->
-    <!-- Remove BloomOS legal option until an actual legal website is implemented -->
-    <!-- <string name="lineagelicense_title">BloomOS legal</string> -->
+    <!-- Use LineageOS legal option until an actual legal website is implemented -->
+    <string name="lineagelicense_title">BloomOS legal</string>
 
     <!-- Double tap to sleep on status bar or lockscreen -->
     <string name="status_bar_double_tap_to_sleep_title">Tap to sleep</string>

@@ -305,7 +305,7 @@ LINEAGE_BUILDTYPE := $(BLOOM_BUILDTYPE)
 LINEAGE_VERSION := $(BLOOM_VERSION)
 
 PRODUCT_EXTRA_RECOVERY_KEYS += \
-    vendor/lineage/build/target/product/security/lineage
+    vendor/bloom/build/target/product/security/bloom
 
 -include vendor/lineage-priv/keys/keys.mk
 

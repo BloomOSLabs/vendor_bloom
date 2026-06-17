@@ -1,4 +1,4 @@
 #
-# Lineage-specific variable clears
+# Bloom-specific variable clears
 #
 LOCAL_IGNORE_SUBDIR :=

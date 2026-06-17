@@ -1,16 +1,16 @@
 function __print_lineage_functions_help() {
 cat <<EOF
-Additional LineageOS functions:
+Additional BloomOS functions:
 - cout:            Changes directory to out.
 - mmp:             Builds all of the modules in the current directory and pushes them to the device.
 - mmap:            Builds all of the modules in the current directory and its dependencies, then pushes the package to the device.
 - mmmp:            Builds all of the modules in the supplied directories and pushes them to the device.
-- lineagegerrit:   A Git wrapper that fetches/pushes patch from/to LineageOS Gerrit Review.
-- lineagerebase:   Rebase a Gerrit change and push it again.
-- lineageremote:   Add git remote for LineageOS Gerrit Review.
+- bloomgerrit:     A Git wrapper that fetches/pushes patch from/to BloomOS Gerrit Review.
+- bloomrebase:     Rebase a Gerrit change and push it again.
+- bloomremote:     Add git remote for BloomOS Gerrit Review.
 - aospremote:      Add git remote for matching AOSP repository.
 - cafremote:       Add git remote for matching CodeAurora repository.
-- githubremote:    Add git remote for LineageOS Github.
+- githubremote:    Add git remote for BloomOS Github.
 - mka:             Builds using SCHED_BATCH on all processors.
 - mkap:            Builds the module(s) using mka and pushes them to the device.
 - cmka:            Cleans and builds using mka.
@@ -71,7 +71,7 @@ function breakfast()
     LINEAGE_DEVICES_ONLY="true"
     unset LUNCH_MENU_CHOICES
     add_lunch_combo full-eng
-    for f in `/bin/ls vendor/lineage/vendorsetup.sh 2> /dev/null`
+    for f in `/bin/ls vendor/bloom/vendorsetup.sh 2> /dev/null`
         do
             echo "including $f"
             . $f
@@ -257,7 +257,7 @@ function dddclient()
    fi
 }
 
-function lineageremote()
+function bloomremote()
 {
     if ! git rev-parse --git-dir &> /dev/null
     then
@@ -477,7 +477,7 @@ function makerecipe() {
     '
 }
 
-function lineagegerrit() {
+function bloomgerrit() {
     if [ "$(__detect_shell)" = "zsh" ]; then
         # zsh does not define FUNCNAME, derive from funcstack
         local FUNCNAME=$funcstack[1]
@@ -715,7 +715,7 @@ EOF
     esac
 }
 
-function lineagerebase() {
+function bloomrebase() {
     local repo=$1
     local refs=$2
     local pwd="$(pwd)"
@@ -991,7 +991,7 @@ if [ -d $(gettop)/prebuilts/snapdragon-llvm/toolchains ]; then
             export SDCLANG=true
             export SDCLANG_PATH=$(gettop)/prebuilts/snapdragon-llvm/toolchains/llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/linux-x86_64/bin
             export SDCLANG_PATH_2=$(gettop)/prebuilts/snapdragon-llvm/toolchains/llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/linux-x86_64/bin
-            export SDCLANG_LTO_DEFS=$(gettop)/vendor/lineage/build/core/sdllvm-lto-defs.mk
+            export SDCLANG_LTO_DEFS=$(gettop)/vendor/bloom/build/core/sdllvm-lto-defs.mk
             ;;
     esac
 fi

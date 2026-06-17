@@ -1,19 +1,19 @@
-# LineageOS System Version
+# BloomOS System Version
 ADDITIONAL_BUILD_PROPERTIES += \
-    ro.lineage.version=$(LINEAGE_VERSION) \
-    ro.lineage.releasetype=$(LINEAGE_BUILDTYPE) \
+    ro.lineage.version=$(BLOOM_VERSION) \
+    ro.lineage.releasetype=$(BLOOM_BUILDTYPE) \
     ro.lineage.build.version=$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR) \
-    ro.modversion=$(LINEAGE_VERSION) \
+    ro.modversion=$(BLOOM_VERSION) \
     ro.lineagelegal.url=https://lineageos.org/legal
 
-# LineageOS Platform Display Version
+# BloomOS Platform Display Version
 ADDITIONAL_BUILD_PROPERTIES += \
-    ro.lineage.display.version=$(LINEAGE_DISPLAY_VERSION)
+    ro.lineage.display.version=$(BLOOM_DISPLAY_VERSION)
 
-# LineageOS Platform SDK Version
+# BloomOS Platform SDK Version
 ADDITIONAL_BUILD_PROPERTIES += \
-    ro.lineage.build.version.plat.sdk=$(LINEAGE_PLATFORM_SDK_VERSION)
+    ro.lineage.build.version.plat.sdk=$(BLOOM_PLATFORM_SDK_VERSION)
 
-# LineageOS Platform Internal Version
+# BloomOS Platform Internal Version
 ADDITIONAL_BUILD_PROPERTIES += \
-    ro.lineage.build.version.plat.rev=$(LINEAGE_PLATFORM_REV)
+    ro.lineage.build.version.plat.rev=$(BLOOM_PLATFORM_REV)
