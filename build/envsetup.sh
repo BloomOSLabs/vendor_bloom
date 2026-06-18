@@ -87,12 +87,12 @@ function breakfast()
             # A buildtype was specified, assume a full device name
             lunch $target
         else
-            # This is probably just the Lineage model name
+            # This is probably just the Bloom model name
             if [ -z "$variant" ]; then
                 variant="userdebug"
             fi
 
-            lunch lineage_$target-$variant
+            lunch bloom_$target-$variant
         fi
     fi
     return $?

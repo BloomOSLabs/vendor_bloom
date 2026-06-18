@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2017 The LineageOS Project
+	Copyright (C) 2026 The BloomOS Project
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024"
+    android:width="1024dp"
+    android:height="1024dp">
+    <path
+        android:pathData="M697 679C697 629.935 677.509 582.879 642.815 548.185C608.121 513.491 561.065 494 512 494C462.935 494 415.879 513.491 381.185 548.185C346.491 582.879 327 629.935 327 679L512 679H697Z"
+        android:fillColor="#2DD4BF" />
+    <path
+        android:pathData="M512 442C574.856 442 635.138 466.97 679.584 511.416C724.03 555.862 749 616.144 749 679V691H275V679C275 616.144 299.97 555.862 344.416 511.416C388.862 466.97 449.144 442 512 442ZM512 454C452.326 454 395.097 477.706 352.901 519.901L351.915 520.893C310.336 562.991 287 619.793 287 679H737C737 619.793 713.664 562.991 672.085 520.893L671.099 519.901C628.903 477.706 571.674 454 512 454Z"
+        android:fillColor="#2DD4BF"
+        android:fillAlpha="0.6" />
+    <path
+        android:pathData="M512 392C588.117 392 661.117 422.238 714.939 476.061C768.762 529.883 799 602.883 799 679V691H225V679C225 602.883 255.238 529.883 309.061 476.061C362.883 422.238 435.883 392 512 392ZM512 404C439.065 404 369.118 432.973 317.546 484.546L316.341 485.758C265.522 537.211 237 606.635 237 679H787C787 606.635 758.478 537.211 707.659 485.758L706.454 484.546C654.882 432.973 584.935 404 512 404Z"
+        android:fillColor="#2DD4BF"
+        android:fillAlpha="0.2" />
+    <path
+        android:pathData="M512 354C599.787 354 683.978 388.873 746.053 450.947C808.127 513.022 843 597.213 843 685V691H181V685C181 597.213 215.873 513.022 277.947 450.947C340.022 388.873 424.213 354 512 354ZM512 366C427.396 366 346.257 399.609 286.433 459.433C228.024 517.841 194.606 596.568 193.057 679H830.943C829.394 596.568 795.976 517.841 737.567 459.433C677.743 399.609 596.604 366 512 366Z"
+        android:fillColor="#2DD4BF"
+        android:fillAlpha="0.05" />
+    <path
+        android:pathData="M178 679H846A6 6 0 0 1 852 685V685A6 6 0 0 1 846 691H178A6 6 0 0 1 172 685V685A6 6 0 0 1 178 679Z"
+        android:fillColor="#2DD4BF" />
+</vector>
