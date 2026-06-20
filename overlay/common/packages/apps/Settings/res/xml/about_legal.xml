@@ -38,12 +38,9 @@
     </Preference>
 
     <!-- Lineage License information -->
-<!--
-	Temporary: Hide LineageOS license button from UI until BloomOS license is available
     <PreferenceScreen
         android:key="lineagelicense"
         android:title="@string/lineagelicense_title" />
--->
 
     <!-- Terms and conditions -->
     <Preference

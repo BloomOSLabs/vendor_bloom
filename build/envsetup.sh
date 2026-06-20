@@ -52,6 +52,33 @@ function mk_timer()
     return $ret
 }
 
+# check to see if the supplied product is one we can build
+function check_product()
+{
+    local T=$(gettop)
+    if [ ! "$T" ]; then
+        echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
+        return
+    fi
+    if (echo -n $1 | grep -q -e "^bloom_") ; then
+        BLOOM_BUILD=$(echo -n $1 | sed -e 's/^bloom_//g')
+    else
+        BLOOM_BUILD=
+    fi
+    
+    # LINEAGE_BUILD=$BLOOM_BUILD
+    
+    export BLOOM_BUILD
+    # export LINEAGE_BUILD
+
+        TARGET_PRODUCT=$1 \
+        TARGET_BUILD_VARIANT= \
+        TARGET_BUILD_TYPE= \
+        TARGET_BUILD_APPS= \
+        get_build_var TARGET_DEVICE > /dev/null
+    # hide successful answers, but allow the errors to show
+}
+
 function brunch()
 {
     breakfast $*
@@ -103,7 +130,7 @@ alias bib=breakfast
 function eat()
 {
     if [ "$OUT" ] ; then
-        ZIPPATH=`ls -tr "$OUT"/lineage-*.zip | tail -1`
+        ZIPPATH=`ls -tr "$OUT"/bloom-*.zip | tail -1`
         if [ ! -f $ZIPPATH ] ; then
             echo "Nothing to eat"
             return 1
@@ -117,7 +144,7 @@ function eat()
             done
             echo "Device Found.."
         fi
-        if (adb shell getprop ro.lineage.device | grep -q "$LINEAGE_BUILD"); then
+        if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD"); then
             # if adbd isn't root we can't write to /cache/recovery/
             adb root
             sleep 1
@@ -133,7 +160,7 @@ EOF
             fi
             rm /tmp/command
         else
-            echo "The connected device does not appear to be $LINEAGE_BUILD, run away!"
+            echo "The connected device does not appear to be $BLOOM_BUILD, run away!"
         fi
         return $?
     else
@@ -444,14 +471,14 @@ function installrecovery()
     sleep 1
     adb wait-for-online shell mount /system 2>&1 >> /dev/null
     adb wait-for-online remount
-    if (adb shell getprop ro.lineage.device | grep -q "$LINEAGE_BUILD");
+    if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD");
     then
         adb push $OUT/recovery.img /cache/
         adb shell dd if=/cache/recovery.img of=$PARTITION
         adb shell rm -rf /cache/recovery.img
         echo "Installation complete."
     else
-        echo "The connected device does not appear to be $LINEAGE_BUILD, run away!"
+        echo "The connected device does not appear to be $BLOOM_BUILD, run away!"
     fi
 }
 
@@ -471,7 +498,7 @@ function makerecipe() {
     if [ "$REPO_REMOTE" = "github" ]
     then
         pwd
-        lineageremote
+        bloomremote
         git push lineage HEAD:refs/heads/'$1'
     fi
     '
@@ -523,7 +550,7 @@ EOF
             case $1 in
                 __cmg_*) echo "For internal use only." ;;
                 changes|for)
-                    if [ "$FUNCNAME" = "lineagegerrit" ]; then
+                    if [ "$FUNCNAME" = "bloomgerrit" ]; then
                         echo "'$FUNCNAME $1' is deprecated."
                     fi
                     ;;
@@ -616,7 +643,7 @@ EOF
                 $local_branch:refs/for/$remote_branch || return 1
             ;;
         changes|for)
-            if [ "$FUNCNAME" = "lineagegerrit" ]; then
+            if [ "$FUNCNAME" = "bloomgerrit" ]; then
                 echo >&2 "'$FUNCNAME $command' is deprecated."
             fi
             ;;
@@ -722,8 +749,8 @@ function bloomrebase() {
     local dir="$(gettop)/$repo"
 
     if [ -z $repo ] || [ -z $refs ]; then
-        echo "LineageOS Gerrit Rebase Usage: "
-        echo "      lineagerebase <path to project> <patch IDs on Gerrit>"
+        echo "BloomOS Gerrit Rebase Usage: "
+        echo "      bloomrebase <path to project> <patch IDs on Gerrit>"
         echo "      The patch IDs appear on the Gerrit commands that are offered."
         echo "      They consist on a series of numbers and slashes, after the text"
         echo "      refs/changes. For example, the ID in the following command is 26/8126/2"
@@ -829,7 +856,7 @@ function dopush()
         echo "Device Found."
     fi
 
-    if (adb shell getprop ro.lineage.device | grep -q "$LINEAGE_BUILD") || [ "$FORCE_PUSH" = "true" ];
+    if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD") || [ "$FORCE_PUSH" = "true" ];
     then
     # retrieve IP and PORT info if we're using a TCP connection
     TCPIPPORT=$(adb devices \
@@ -947,7 +974,7 @@ EOF
     rm -f $OUT/.log
     return 0
     else
-        echo "The connected device does not appear to be $LINEAGE_BUILD, run away!"
+        echo "The connected device does not appear to be $BLOOM_BUILD, run away!"
     fi
 }
 

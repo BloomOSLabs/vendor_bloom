@@ -95,9 +95,6 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     vendor/bloom/config/permissions/lineage-power-whitelist.xml:system/etc/sysconfig/lineage-power-whitelist.xml
 
-# Temporary: Set BLOOM_BUILD to LINEAGE_BUILD until BLOOM_BUILD actually exists
-BLOOM_BUILD := $(LINEAGE_BUILD)
-
 # Include AOSP audio files
 include vendor/bloom/config/aosp_audio.mk
 
@@ -141,6 +138,10 @@ PRODUCT_PACKAGES += \
     LineageSettingsProvider \
     LineageSetupWizard \
     Updater
+
+# Custom Bloom packages
+PRODUCT_PACKAGES += \
+	BloomOSHub
 
 # Extra tools in Lineage
 PRODUCT_PACKAGES += \
@@ -336,6 +337,13 @@ endif
 
 # Temporary: Set LINEAGE_DISPLAY_VERSION after BLOOM_DISPLAY_VERSION is set
 LINEAGE_DISPLAY_VERSION := $(BLOOM_DISPLAY_VERSION)
+
+
+# Inherit BloomOS Properties
+include vendor/bloom/config/bloom.mk
+
+# Inherit BloomOS version
+include vendor/bloom/config/version.mk
 
 -include $(WORKSPACE)/build_env/image-auto-bits.mk
 -include vendor/bloom/config/partner_gms.mk

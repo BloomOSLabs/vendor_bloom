@@ -21,6 +21,17 @@
     android:title="@string/header_category_system"
     settings:initialExpandedChildrenCount="4">
 
+	<!-- Temporary: Add BloomOSHub entry in System -->
+	<Preference
+	    android:key="bloomos_hub"
+	    android:title="@string/bloomos_hub_title"
+	    android:summary="@string/bloomos_hub_summary"
+	    android:icon="@drawable/ic_settings_24dp"
+	    android:order="-500">
+	    <intent
+	        android:action="org.bloomos.settings.HUB" />
+	</Preference>
+
     <Preference
         android:key="gesture_settings"
         android:title="@string/gesture_preference_title"

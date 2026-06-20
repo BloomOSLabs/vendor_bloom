@@ -30,6 +30,10 @@
     <!-- Strings for Dialog switch button [CHAR LIMIT=20] -->
     <string name="dlg_switch">Switch</string>
 
+	<!-- Temporary: Add BloomOS Hub title and summary -->
+	<string name="bloomos_hub_title">BloomOS Hub</string>
+	<string name="bloomos_hub_summary">About, maintainers, changelog and customization</string>
+
     <!-- Device Info --> <skip />
     <!-- Device Info screen. Used for a status item's value when the proper value is not known -->
     <string name="device_info_default">Unknown</string>

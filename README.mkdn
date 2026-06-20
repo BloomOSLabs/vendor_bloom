@@ -35,3 +35,108 @@ All supported devices are built weekly and periodically as changes are committed
 You can view the current build statuses at [BloomOS Jenkins](https://jenkins.lineageos.org/).
 
 Builds produced weekly by the buildbot can be downloaded from [BloomOS downloads](https://download.lineageos.org/).
+
+--------
+
+# BloomOS Translation Progress
+
+## Overview
+
+BloomOS is currently undergoing branding and translation review as part of the migration from LineageOS.
+
+This repository contains translated resources inherited from upstream LineageOS. Each language is being reviewed manually to replace user-visible references to LineageOS, CyanogenMod, websites, contributor references, legal references, and other project-specific branding.
+
+## Translation Review Status
+
+### Reviewed
+
+The following resource directories have been reviewed and updated where necessary:
+
+* values
+* values-af
+* values-ar
+* values-ast-rES
+* values-az
+* values-be
+* values-bg
+* values-bn
+* values-bs
+* values-ca
+* values-cs
+* values-cy
+* values-da
+* values-de
+* values-el
+
+### Pending Review
+
+All remaining language directories still require branding review and validation.
+
+Examples include:
+
+* values-en-rAU
+* values-en-rCA
+* values-en-rGB
+* values-en-rIN
+* values-es
+* values-es-rMX
+* values-es-rUS
+* values-et
+* values-eu
+* values-fi
+* values-fr
+* values-fy-rNL
+* values-gd
+* values-gl
+* values-hr
+* values-hu
+* values-is
+* values-it
+* values-iw
+* values-ja
+* values-ka
+* values-kn
+* values-ko
+* values-mk
+* values-nb
+* values-nl
+* values-pl
+* values-pt-rBR
+* values-pt-rPT
+* values-ro
+* values-ru
+* values-sc-rIT
+* values-sk
+* values-sl
+* values-sq
+* values-sr
+* values-sv
+* values-th
+* values-tr
+* values-uk
+* values-vi
+* values-zh-rCN
+* values-zh-rTW
+
+## Current Policy
+
+Until a language directory is reviewed:
+
+* Upstream translations are retained.
+* Functional translations are preferred over incomplete translations.
+* Branding inconsistencies may still exist.
+
+## Contribution Guidelines
+
+When reviewing a translation:
+
+1. Preserve the original language.
+2. Replace user-visible references to LineageOS where appropriate.
+3. Replace user-visible references to CyanogenMod where appropriate.
+4. Verify URLs and contributor references.
+5. Preserve formatting placeholders and XML structure.
+6. Ensure translations compile successfully.
+
+## Project Status
+
+This review process is ongoing and will continue throughout BloomOS development.
