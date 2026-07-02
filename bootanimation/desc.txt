@@ -1,1 +1,5 @@
-c 1 0 part0
+p 1 0 part0
+p 1 0 part1
+p 1 0 part2
+p 1 0 part3
+c 0 0 part4
