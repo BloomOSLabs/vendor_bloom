@@ -1,63 +1,78 @@
 # Inherit common mobile Bloom stuff
 $(call inherit-product, vendor/bloom/config/common.mk)
 
+# Include AOSP audio files
+include vendor/bloom/config/aosp_audio.mk
+
+# Include Bloom audio files
+include vendor/bloom/config/bloom_audio.mk
+
 # Default notification/alarm sounds
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+PRODUCT_PRODUCT_PROPERTIES += \
     ro.config.notification_sound=Argon.ogg \
     ro.config.alarm_alert=Hassium.ogg
 
-ifneq ($(TARGET_BUILD_VARIANT),user)
-# Thank you, please drive thru!
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += persist.sys.dun.override=0
-endif
-
-# Optional packages
+# Apps
 PRODUCT_PACKAGES += \
-    LiveWallpapersPicker \
-    PhotoTable
-
-# Custom Bloom packages
-PRODUCT_PACKAGES += \
-    AudioFX \
     Backgrounds \
     Eleven \
+    Etar \
     ExactCalculator \
     Jelly \
-    LockClock \
-    TrebuchetQuickStep \
-    WeatherProvider
+    Profiles \
+    Seedvault
 
-# Exchange support
+ifneq ($(TARGET_EXCLUDES_AUDIOFX),true)
 PRODUCT_PACKAGES += \
-    Exchange2
+    AudioFX
+endif
 
-# Berry styles
+ifeq ($(PRODUCT_TYPE), go)
 PRODUCT_PACKAGES += \
-    LineageBlackTheme \
-    LineageDarkTheme \
-    LineageBlackAccent \
-    LineageBlueAccent \
-    LineageBrownAccent \
-    LineageCyanAccent \
-    LineageGreenAccent \
-    LineageOrangeAccent \
-    LineagePinkAccent \
-    LineagePurpleAccent \
-    LineageRedAccent \
-    LineageYellowAccent
+    TrebuchetQuickStepGo
+
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    TrebuchetQuickStepGo
+else
+PRODUCT_PACKAGES += \
+    TrebuchetQuickStep
+
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    TrebuchetQuickStep
+endif
 
 # Charger
 PRODUCT_PACKAGES += \
     charger_res_images
 
-# Custom off-mode charger
-ifeq ($(WITH_LINEAGE_CHARGER),true)
+ifneq ($(WITH_LINEAGE_CHARGER),false)
 PRODUCT_PACKAGES += \
-    lineage_charger_res_images \
-    font_log.png \
-    libhealthd.lineage
+    lineage_charger_animation
 endif
+
+# Customizations
+PRODUCT_PACKAGES += \
+    IconShapePebbleOverlay \
+    IconShapeRoundedRectOverlay \
+    IconShapeSquareOverlay \
+    IconShapeSquircleOverlay \
+    IconShapeTaperedRectOverlay \
+    IconShapeTeardropOverlay \
+    IconShapeVesselOverlay \
+    LineageNavigationBarNoHint \
+    NavigationBarMode2ButtonOverlay
 
 # Media
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     media.recorder.show_manufacturer_and_model=true
+
+# SystemUI plugins
+PRODUCT_PACKAGES += \
+    QuickAccessWallet
+
+# Themes
+PRODUCT_PACKAGES += \
+    LineageBlackTheme \
+    LineageThemesStub \
+    ThemePicker
+

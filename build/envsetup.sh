@@ -1,16 +1,16 @@
 function __print_lineage_functions_help() {
 cat <<EOF
-Additional BloomOS functions:
+Additional LineageOS functions:
 - cout:            Changes directory to out.
 - mmp:             Builds all of the modules in the current directory and pushes them to the device.
 - mmap:            Builds all of the modules in the current directory and its dependencies, then pushes the package to the device.
 - mmmp:            Builds all of the modules in the supplied directories and pushes them to the device.
-- bloomgerrit:     A Git wrapper that fetches/pushes patch from/to BloomOS Gerrit Review.
-- bloomrebase:     Rebase a Gerrit change and push it again.
-- bloomremote:     Add git remote for BloomOS Gerrit Review.
+- lineagegerrit:   A Git wrapper that fetches/pushes patch from/to LineageOS Gerrit Review.
+- lineagerebase:   Rebase a Gerrit change and push it again.
+- lineageremote:   Add git remote for LineageOS Gerrit Review.
 - aospremote:      Add git remote for matching AOSP repository.
 - cafremote:       Add git remote for matching CodeAurora repository.
-- githubremote:    Add git remote for BloomOS Github.
+- githubremote:    Add git remote for LineageOS Github.
 - mka:             Builds using SCHED_BATCH on all processors.
 - mkap:            Builds the module(s) using mka and pushes them to the device.
 - cmka:            Cleans and builds using mka.
@@ -18,6 +18,7 @@ Additional BloomOS functions:
 - repolastsync:    Prints date and time of last repo sync.
 - reposync:        Parallel repo sync using ionice and SCHED_BATCH.
 - repopick:        Utility to fetch changes from Gerrit.
+- sort-blobs-list: Sort proprietary-files.txt sections with LC_ALL=C.
 - installboot:     Installs a boot.img to the connected device.
 - installrecovery: Installs a recovery.img to the connected device.
 EOF
@@ -95,26 +96,16 @@ function breakfast()
 {
     target=$1
     local variant=$2
-    LINEAGE_DEVICES_ONLY="true"
-    unset LUNCH_MENU_CHOICES
-    add_lunch_combo full-eng
-    for f in `/bin/ls vendor/bloom/vendorsetup.sh 2> /dev/null`
-        do
-            echo "including $f"
-            . $f
-        done
-    unset f
 
     if [ $# -eq 0 ]; then
         # No arguments, so let's have the full menu
         lunch
     else
-        echo "z$target" | grep -q "-"
-        if [ $? -eq 0 ]; then
+        if [[ "$target" =~ -(user|userdebug|eng)$ ]]; then
             # A buildtype was specified, assume a full device name
             lunch $target
         else
-            # This is probably just the Bloom model name
+            # This is probably just the Lineage model name
             if [ -z "$variant" ]; then
                 variant="userdebug"
             fi
@@ -135,30 +126,14 @@ function eat()
             echo "Nothing to eat"
             return 1
         fi
-        adb start-server # Prevent unexpected starting server message from adb get-state in the next line
-        if [ $(adb get-state) != device -a $(adb shell 'test -e /sbin/recovery 2> /dev/null; echo $?') != 0 ] ; then
-            echo "No device is online. Waiting for one..."
-            echo "Please connect USB and/or enable USB debugging"
-            until [ $(adb get-state) = device -o $(adb shell 'test -e /sbin/recovery 2> /dev/null; echo $?') = 0 ];do
-                sleep 1
-            done
-            echo "Device Found.."
-        fi
+        echo "Waiting for device..."
+        adb wait-for-device-recovery
+        echo "Found device"
         if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD"); then
-            # if adbd isn't root we can't write to /cache/recovery/
-            adb root
-            sleep 1
-            adb wait-for-device
-            cat << EOF > /tmp/command
---sideload_auto_reboot
-EOF
-            if adb push /tmp/command /cache/recovery/ ; then
-                echo "Rebooting into recovery for sideload installation"
-                adb reboot recovery
-                adb wait-for-sideload
-                adb sideload $ZIPPATH
-            fi
-            rm /tmp/command
+            echo "Rebooting to sideload for install"
+            adb reboot sideload-auto-reboot
+            adb wait-for-sideload
+            adb sideload $ZIPPATH
         else
             echo "The connected device does not appear to be $BLOOM_BUILD, run away!"
         fi
@@ -284,7 +259,7 @@ function dddclient()
    fi
 }
 
-function bloomremote()
+function lineageremote()
 {
     if ! git rev-parse --git-dir &> /dev/null
     then
@@ -394,7 +369,7 @@ function githubremote()
 
 function installboot()
 {
-    if [ ! -e "$OUT/recovery/root/etc/recovery.fstab" ];
+    if [ ! -e "$OUT/recovery/root/system/etc/recovery.fstab" ];
     then
         echo "No recovery.fstab found. Build recovery first."
         return 1
@@ -404,46 +379,35 @@ function installboot()
         echo "No boot.img found. Run make bootimage first."
         return 1
     fi
-    PARTITION=`grep "^\/boot" $OUT/recovery/root/etc/recovery.fstab | awk {'print $3'}`
+    PARTITION=`grep "^\/boot" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $3'}`
     if [ -z "$PARTITION" ];
     then
         # Try for RECOVERY_FSTAB_VERSION = 2
-        PARTITION=`grep "[[:space:]]\/boot[[:space:]]" $OUT/recovery/root/etc/recovery.fstab | awk {'print $1'}`
-        PARTITION_TYPE=`grep "[[:space:]]\/boot[[:space:]]" $OUT/recovery/root/etc/recovery.fstab | awk {'print $3'}`
+        PARTITION=`grep "[[:space:]]\/boot[[:space:]]" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $1'}`
+        PARTITION_TYPE=`grep "[[:space:]]\/boot[[:space:]]" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $3'}`
         if [ -z "$PARTITION" ];
         then
             echo "Unable to determine boot partition."
             return 1
         fi
     fi
-    adb start-server
-    adb wait-for-online
+    adb wait-for-device-recovery
     adb root
-    sleep 1
-    adb wait-for-online shell mount /system 2>&1 > /dev/null
-    adb wait-for-online remount
-    if (adb shell getprop ro.lineage.device | grep -q "$LINEAGE_BUILD");
+    adb wait-for-device-recovery
+    if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD");
     then
         adb push $OUT/boot.img /cache/
-        if [ -e "$OUT/system/lib/modules/*" ];
-        then
-            for i in $OUT/system/lib/modules/*;
-            do
-                adb push $i /system/lib/modules/
-            done
-            adb shell chmod 644 /system/lib/modules/*
-        fi
         adb shell dd if=/cache/boot.img of=$PARTITION
         adb shell rm -rf /cache/boot.img
         echo "Installation complete."
     else
-        echo "The connected device does not appear to be $LINEAGE_BUILD, run away!"
+        echo "The connected device does not appear to be $BLOOM_BUILD, run away!"
     fi
 }
 
 function installrecovery()
 {
-    if [ ! -e "$OUT/recovery/root/etc/recovery.fstab" ];
+    if [ ! -e "$OUT/recovery/root/system/etc/recovery.fstab" ];
     then
         echo "No recovery.fstab found. Build recovery first."
         return 1
@@ -453,24 +417,21 @@ function installrecovery()
         echo "No recovery.img found. Run make recoveryimage first."
         return 1
     fi
-    PARTITION=`grep "^\/recovery" $OUT/recovery/root/etc/recovery.fstab | awk {'print $3'}`
+    PARTITION=`grep "^\/recovery" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $3'}`
     if [ -z "$PARTITION" ];
     then
         # Try for RECOVERY_FSTAB_VERSION = 2
-        PARTITION=`grep "[[:space:]]\/recovery[[:space:]]" $OUT/recovery/root/etc/recovery.fstab | awk {'print $1'}`
-        PARTITION_TYPE=`grep "[[:space:]]\/recovery[[:space:]]" $OUT/recovery/root/etc/recovery.fstab | awk {'print $3'}`
+        PARTITION=`grep "[[:space:]]\/recovery[[:space:]]" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $1'}`
+        PARTITION_TYPE=`grep "[[:space:]]\/recovery[[:space:]]" $OUT/recovery/root/system/etc/recovery.fstab | awk {'print $3'}`
         if [ -z "$PARTITION" ];
         then
             echo "Unable to determine recovery partition."
             return 1
         fi
     fi
-    adb start-server
-    adb wait-for-online
+    adb wait-for-device-recovery
     adb root
-    sleep 1
-    adb wait-for-online shell mount /system 2>&1 >> /dev/null
-    adb wait-for-online remount
+    adb wait-for-device-recovery
     if (adb shell getprop ro.lineage.device | grep -q "$BLOOM_BUILD");
     then
         adb push $OUT/recovery.img /cache/
@@ -498,14 +459,14 @@ function makerecipe() {
     if [ "$REPO_REMOTE" = "github" ]
     then
         pwd
-        bloomremote
+        lineageremote
         git push lineage HEAD:refs/heads/'$1'
     fi
     '
 }
 
-function bloomgerrit() {
-    if [ "$(__detect_shell)" = "zsh" ]; then
+function lineagegerrit() {
+    if [ "$(basename $SHELL)" = "zsh" ]; then
         # zsh does not define FUNCNAME, derive from funcstack
         local FUNCNAME=$funcstack[1]
     fi
@@ -550,7 +511,7 @@ EOF
             case $1 in
                 __cmg_*) echo "For internal use only." ;;
                 changes|for)
-                    if [ "$FUNCNAME" = "bloomgerrit" ]; then
+                    if [ "$FUNCNAME" = "lineagegerrit" ]; then
                         echo "'$FUNCNAME $1' is deprecated."
                     fi
                     ;;
@@ -640,10 +601,10 @@ EOF
             esac
             shift
             git push $@ ssh://$user@$review:29418/$project \
-                $local_branch:refs/for/$remote_branch || return 1
+                ${local_branch}:refs/for/$remote_branch || return 1
             ;;
         changes|for)
-            if [ "$FUNCNAME" = "bloomgerrit" ]; then
+            if [ "$FUNCNAME" = "lineagegerrit" ]; then
                 echo >&2 "'$FUNCNAME $command' is deprecated."
             fi
             ;;
@@ -742,15 +703,15 @@ EOF
     esac
 }
 
-function bloomrebase() {
+function lineagerebase() {
     local repo=$1
     local refs=$2
     local pwd="$(pwd)"
     local dir="$(gettop)/$repo"
 
     if [ -z $repo ] || [ -z $refs ]; then
-        echo "BloomOS Gerrit Rebase Usage: "
-        echo "      bloomrebase <path to project> <patch IDs on Gerrit>"
+        echo "LineageOS Gerrit Rebase Usage: "
+        echo "      lineagerebase <path to project> <patch IDs on Gerrit>"
         echo "      The patch IDs appear on the Gerrit commands that are offered."
         echo "      They consist on a series of numbers and slashes, after the text"
         echo "      refs/changes. For example, the ID in the following command is 26/8126/2"
@@ -784,7 +745,7 @@ function bloomrebase() {
 }
 
 function mka() {
-    m -j "$@"
+    m "$@"
 }
 
 function cmka() {
@@ -830,8 +791,7 @@ function repodiff() {
 # Return success if adb is up and not in recovery
 function _adb_connected {
     {
-        if [[ "$(adb get-state)" == device &&
-              "$(adb shell 'test -e /sbin/recovery; echo $?')" != 0 ]]
+        if [[ "$(adb get-state)" == device ]]
         then
             return 0
         fi
@@ -871,7 +831,6 @@ function dopush()
         adb connect "$TCPIPPORT"
     fi
     adb wait-for-device &> /dev/null
-    sleep 0.3
     adb remount &> /dev/null
 
     mkdir -p $OUT
@@ -906,7 +865,7 @@ function dopush()
         CHKPERM="/data/local/tmp/chkfileperm.sh"
 (
 cat <<'EOF'
-#!/system/xbin/sh
+#!/system/bin/sh
 FILE=$@
 if [ -e $FILE ]; then
     ls -l $FILE | awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf("%0o ",k);print}' | cut -d ' ' -f1
@@ -919,11 +878,13 @@ EOF
         rm -f $OUT/.chkfileperm.sh
     fi
 
+    RELOUT=$(echo $OUT | sed "s#^${ANDROID_BUILD_TOP}/##")
+
     stop_n_start=false
-    for TARGET in $(echo $LOC | tr " " "\n" | sed "s#.*$OUT##" | sort | uniq); do
-        # Make sure file is in $OUT/system or $OUT/data
+    for TARGET in $(echo $LOC | tr " " "\n" | sed "s#.*${RELOUT}##" | sort | uniq); do
+        # Make sure file is in $OUT/{system,system_ext,data,odm,oem,product,product_services,vendor}
         case $TARGET in
-            /system/*|/data/*)
+            /system/*|/system_ext/*|/data/*|/odm/*|/oem/*|/product/*|/product_services/*|/vendor/*)
                 # Get out file from target (i.e. /system/bin/adb)
                 FILE=$OUT$TARGET
             ;;
@@ -950,7 +911,7 @@ EOF
                 fi
                 adb shell restorecon "$TARGET"
             ;;
-            /system/priv-app/SystemUI/SystemUI.apk|/system/framework/*)
+            */SystemUI.apk|*/framework/*)
                 # Only need to stop services once
                 if ! $stop_n_start; then
                     adb shell stop
@@ -987,38 +948,29 @@ alias cmkap='dopush cmka'
 
 function repopick() {
     T=$(gettop)
-    $T/lineage/scripts/repopick/repopick.py $@
+    $T/lineage/scripts/repopick/repopick.py "$@"
+}
+
+function sort-blobs-list() {
+    T=$(gettop)
+    $T/tools/extract-utils/sort-blobs-list.py $@
 }
 
 function fixup_common_out_dir() {
     common_out_dir=$(get_build_var OUT_DIR)/target/common
     target_device=$(get_build_var TARGET_DEVICE)
+    common_target_out=common-${target_device}
     if [ ! -z $LINEAGE_FIXUP_COMMON_OUT ]; then
         if [ -d ${common_out_dir} ] && [ ! -L ${common_out_dir} ]; then
             mv ${common_out_dir} ${common_out_dir}-${target_device}
-            ln -s ${common_out_dir}-${target_device} ${common_out_dir}
+            ln -s ${common_target_out} ${common_out_dir}
         else
             [ -L ${common_out_dir} ] && rm ${common_out_dir}
             mkdir -p ${common_out_dir}-${target_device}
-            ln -s ${common_out_dir}-${target_device} ${common_out_dir}
+            ln -s ${common_target_out} ${common_out_dir}
         fi
     else
         [ -L ${common_out_dir} ] && rm ${common_out_dir}
         mkdir -p ${common_out_dir}
     fi
 }
-
-# Enable SD-LLVM if available
-if [ -d $(gettop)/prebuilts/snapdragon-llvm/toolchains ]; then
-    case `uname -s` in
-        Darwin)
-            # Darwin is not supported yet
-            ;;
-        *)
-            export SDCLANG=true
-            export SDCLANG_PATH=$(gettop)/prebuilts/snapdragon-llvm/toolchains/llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/linux-x86_64/bin
-            export SDCLANG_PATH_2=$(gettop)/prebuilts/snapdragon-llvm/toolchains/llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/linux-x86_64/bin
-            export SDCLANG_LTO_DEFS=$(gettop)/vendor/bloom/build/core/sdllvm-lto-defs.mk
-            ;;
-    esac
-fi

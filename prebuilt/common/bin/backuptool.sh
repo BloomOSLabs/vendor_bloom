@@ -6,30 +6,27 @@
 export C=/tmp/backupdir
 export SYSDEV="$(readlink -nf "$2")"
 export SYSFS="$3"
-export V=16.0
+export V=19.1
 
-export ADDOND_VERSION=1
+export ADDOND_VERSION=3
+
+# Partitions to mount for backup/restore in V3
+export all_V3_partitions="vendor product system_ext"
 
 # Scripts in /system/addon.d expect to find backuptool.functions in /tmp
 cp -f /tmp/install/bin/backuptool.functions /tmp
+
+get_script_version() {
+  version=$(grep "^# ADDOND_VERSION=" $1 | cut -d= -f2)
+  [ -z "$version" ] && version=1
+  echo $version
+}
 
 # Preserve /system/addon.d in /tmp/addon.d
 preserve_addon_d() {
   if [ -d $S/addon.d/ ]; then
     mkdir -p /tmp/addon.d/
     cp -a $S/addon.d/* /tmp/addon.d/
-
-    # Discard any scripts that aren't at least our version level
-    for f in /postinstall/tmp/addon.d/*sh; do
-      SCRIPT_VERSION=$(grep "^# ADDOND_VERSION=" $f | cut -d= -f2)
-      if [ -z "$SCRIPT_VERSION" ]; then
-        SCRIPT_VERSION=1
-      fi
-      if [ $SCRIPT_VERSION -lt $ADDOND_VERSION ]; then
-        rm $f
-      fi
-    done
-
     chmod 755 /tmp/addon.d/*.sh
   fi
 }
@@ -47,37 +44,55 @@ restore_addon_d() {
 check_prereq() {
 # If there is no build.prop file the partition is probably empty.
 if [ ! -r $S/build.prop ]; then
-    return 1
+  echo "Backup/restore is not possible. Partition is probably empty"
+  return 1
 fi
 if ! grep -q "^ro.lineage.version=$V.*" $S/build.prop; then
-  echo "Not backing up files from incompatible version: $V"
+  echo "Backup/restore is not possible. Incompatible ROM version: $V"
   return 2
 fi
 return 0
 }
 
-# Execute /system/addon.d/*.sh scripts with $1 parameter
-run_stage() {
+# Execute /system/addon.d/*.sh scripts with each $@ parameter
+run_stages() {
 if [ -d /tmp/addon.d/ ]; then
   for script in $(find /tmp/addon.d/ -name '*.sh' |sort -n); do
-    $script $1
+    v=$(get_script_version $script)
+    if [ $v -ge 3 ]; then
+      mount_extra $all_V3_partitions
+    else
+      umount_extra $all_V3_partitions
+    fi
+
+    for stage in $@; do
+      if [ $v -ge 3 ]; then
+        $script $stage
+      else
+        ADDOND_VERSION= $script $stage
+      fi
+    done
   done
 fi
 }
 
+#####################
+### Mount helpers ###
+#####################
 determine_system_mount() {
   if grep -q -e"^$SYSDEV" /proc/mounts; then
     umount $(grep -e"^$SYSDEV" /proc/mounts | cut -d" " -f2)
   fi
 
-  if [ -d /system_root ]; then
+  if [ -d /mnt/system ]; then
+    SYSMOUNT="/mnt/system"
+  elif [ -d /system_root ]; then
     SYSMOUNT="/system_root"
-    export S=/system_root/system
   else
     SYSMOUNT="/system"
-    export S=/system
   fi
 
+  export S=$SYSMOUNT/system
 }
 
 mount_system() {
@@ -88,29 +103,86 @@ unmount_system() {
   umount $SYSMOUNT
 }
 
+get_block_for_mount_point() {
+  grep -v "^#" /etc/recovery.fstab | grep "[[:blank:]]$1[[:blank:]]" | tail -n1 | tr -s [:blank:] ' ' | cut -d' ' -f1
+}
+
+find_block() {
+  local name="$1"
+  local fstab_entry=$(get_block_for_mount_point "/$name")
+  # P-SAR hacks
+  [ -z "$fstab_entry" ] && [ "$name" = "system" ] && fstab_entry=$(get_block_for_mount_point "/")
+  [ -z "$fstab_entry" ] && [ "$name" = "system" ] && fstab_entry=$(get_block_for_mount_point "/system_root")
+
+  local dev
+  if [ "$DYNAMIC_PARTITIONS" = "true" ]; then
+    if [ -n "$fstab_entry" ]; then
+      dev="${BLK_PATH}/${fstab_entry}"
+    else
+      dev="${BLK_PATH}/${name}"
+    fi
+  else
+    if [ -n "$fstab_entry" ]; then
+      dev="$fstab_entry"
+    else
+      dev="${BLK_PATH}/${name}"
+    fi
+  fi
+
+  if [ -b "$dev" ]; then
+    echo "$dev"
+  fi
+}
+
 determine_system_mount
+
+DYNAMIC_PARTITIONS=$(getprop ro.boot.dynamic_partitions)
+if [ "$DYNAMIC_PARTITIONS" = "true" ]; then
+    BLK_PATH="/dev/block/mapper"
+else
+    BLK_PATH=$(dirname "$SYSDEV")
+fi
+
+mount_extra() {
+  for partition in $@; do
+    mnt_point="/$partition"
+    mountpoint "$mnt_point" >/dev/null 2>&1 && continue
+    [ -L "$SYSMOUNT/$partition" ] && continue
+
+    blk_dev=$(find_block "$partition")
+    if [ -e "$blk_dev" ]; then
+      [ "$DYNAMIC_PARTITIONS" = "true" ] && blockdev --setrw "$blk_dev"
+      mkdir -p "$mnt_point"
+      mount -o rw "$blk_dev" "$mnt_point"
+    fi
+  done
+}
+
+umount_extra() {
+  for partition in $@; do
+    umount -l "/$partition" 2>/dev/null
+  done
+}
 
 case "$1" in
   backup)
     mount_system
     if check_prereq; then
-        mkdir -p $C
-        preserve_addon_d
-        run_stage pre-backup
-        run_stage backup
-        run_stage post-backup
+      mkdir -p $C
+      preserve_addon_d
+      run_stages pre-backup backup post-backup
+      umount_extra $all_V3_partitions
     fi
     unmount_system
   ;;
   restore)
     mount_system
     if check_prereq; then
-        run_stage pre-restore
-        run_stage restore
-        run_stage post-restore
-        restore_addon_d
-        rm -rf $C
-        sync
+      run_stages pre-restore restore post-restore
+      umount_extra $all_V3_partitions
+      restore_addon_d
+      rm -rf $C
+      sync
     fi
     unmount_system
   ;;

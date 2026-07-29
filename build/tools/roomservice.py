@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2012-2013, The CyanogenMod Project
-#           (C) 2017,      The LineageOS Project
+#           (C) 2017-2018,2020-2021, The LineageOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 from __future__ import print_function
 
 import base64
+import glob
 import json
 import netrc
 import os
@@ -52,7 +53,7 @@ except:
     device = product
 
 if not depsonly:
-    print("Device %s not found. Attempting to retrieve device repository from BloomOS Github (http://github.com/BloomOSLabs)." % device)
+    print("Device %s not found. Attempting to retrieve device repository from LineageOS Github (http://github.com/LineageOS)." % device)
 
 repositories = []
 
@@ -72,16 +73,16 @@ def add_auth(githubreq):
         githubreq.add_header("Authorization","Basic %s" % githubauth)
 
 if not depsonly:
-    githubreq = urllib.request.Request("https://api.github.com/search/repositories?q=%s+user:BloomOSLabs+in:name+fork:true" % device)
+    githubreq = urllib.request.Request("https://api.github.com/search/repositories?q=%s+user:LineageOS+in:name+fork:true" % device)
     add_auth(githubreq)
     try:
         result = json.loads(urllib.request.urlopen(githubreq).read().decode())
     except urllib.error.URLError:
         print("Failed to search GitHub")
-        sys.exit()
+        sys.exit(1)
     except ValueError:
         print("Failed to parse return data from GitHub")
-        sys.exit()
+        sys.exit(1)
     for res in result.get('items', []):
         repositories.append(res)
 
@@ -130,28 +131,30 @@ def get_default_revision():
     return r.replace('refs/heads/', '').replace('refs/tags/', '')
 
 def get_from_manifest(devicename):
-    try:
-        lm = ElementTree.parse(".repo/local_manifests/roomservice.xml")
-        lm = lm.getroot()
-    except:
-        lm = ElementTree.Element("manifest")
+    for path in glob.glob(".repo/local_manifests/*.xml"):
+        try:
+            lm = ElementTree.parse(path)
+            lm = lm.getroot()
+        except:
+            lm = ElementTree.Element("manifest")
 
-    for localpath in lm.findall("project"):
-        if re.search("android_device_.*_%s$" % device, localpath.get("name")):
-            return localpath.get("path")
+        for localpath in lm.findall("project"):
+            if re.search("android_device_.*_%s$" % device, localpath.get("name")):
+                return localpath.get("path")
 
     return None
 
 def is_in_manifest(projectpath):
-    try:
-        lm = ElementTree.parse(".repo/local_manifests/roomservice.xml")
-        lm = lm.getroot()
-    except:
-        lm = ElementTree.Element("manifest")
+    for path in glob.glob(".repo/local_manifests/*.xml"):
+        try:
+            lm = ElementTree.parse(path)
+            lm = lm.getroot()
+        except:
+            lm = ElementTree.Element("manifest")
 
-    for localpath in lm.findall("project"):
-        if localpath.get("path") == projectpath:
-            return True
+        for localpath in lm.findall("project"):
+            if localpath.get("path") == projectpath:
+                return True
 
     # Search in main manifest, too
     try:
@@ -189,12 +192,12 @@ def add_to_manifest(repositories, fallback_branch = None):
         repo_target = repository['target_path']
         print('Checking if %s is fetched from %s' % (repo_target, repo_name))
         if is_in_manifest(repo_target):
-            print('BloomOS/%s already fetched to %s' % (repo_name, repo_target))
+            print('LineageOS/%s already fetched to %s' % (repo_name, repo_target))
             continue
 
-        print('Adding dependency: BloomOS/%s -> %s' % (repo_name, repo_target))
+        print('Adding dependency: LineageOS/%s -> %s' % (repo_name, repo_target))
         project = ElementTree.Element("project", attrib = { "path": repo_target,
-            "remote": "github", "name": "BloomOS/%s" % repo_name })
+            "remote": "github", "name": "LineageOS/%s" % repo_name })
 
         if 'branch' in repository:
             project.set('revision',repository['branch'])
@@ -232,6 +235,9 @@ def fetch_dependencies(repo_path, fallback_branch = None):
                 verify_repos.append(dependency['target_path'])
             else:
                 verify_repos.append(dependency['target_path'])
+
+            if not os.path.isdir(dependency['target_path']):
+                syncable_repos.append(dependency['target_path'])
 
         dependencies_file.close()
 
@@ -312,4 +318,4 @@ else:
             print("Done")
             sys.exit()
 
-print("Repository for %s not found in the BloomOS Github repository list. If this is in error, you may need to manually add it to your local_manifests/roomservice.xml." % device)
+print("Repository for %s not found in the LineageOS Github repository list. If this is in error, you may need to manually add it to your local_manifests/roomservice.xml." % device)

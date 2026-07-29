@@ -13,9 +13,6 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     ro.com.google.clientidbase=$(PRODUCT_GMS_CLIENTID_BASE)
 endif
 
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
-    ro.build.selinux=1
-
 ifeq ($(TARGET_BUILD_VARIANT),eng)
 # Disable ADB authentication
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += ro.adb.secure=0
@@ -27,88 +24,68 @@ else
 # Enable ADB authentication
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += ro.adb.secure=1
 endif
+
+# Disable extra StrictMode features on all non-engineering builds
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += persist.sys.strictmode.disable=true
 endif
 
 # Backup Tool
 PRODUCT_COPY_FILES += \
     vendor/bloom/prebuilt/common/bin/backuptool.sh:install/bin/backuptool.sh \
     vendor/bloom/prebuilt/common/bin/backuptool.functions:install/bin/backuptool.functions \
-    vendor/bloom/prebuilt/common/bin/50-lineage.sh:system/addon.d/50-lineage.sh
+    vendor/bloom/prebuilt/common/bin/50-lineage.sh:$(TARGET_COPY_OUT_SYSTEM)/addon.d/50-lineage.sh
 
-ifeq ($(AB_OTA_UPDATER),true)
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/addon.d/50-lineage.sh
+
+ifneq ($(strip $(AB_OTA_PARTITIONS) $(AB_OTA_POSTINSTALL_CONFIG)),)
 PRODUCT_COPY_FILES += \
-    vendor/bloom/prebuilt/common/bin/backuptool_ab.sh:system/bin/backuptool_ab.sh \
-    vendor/bloom/prebuilt/common/bin/backuptool_ab.functions:system/bin/backuptool_ab.functions \
-    vendor/bloom/prebuilt/common/bin/backuptool_postinstall.sh:system/bin/backuptool_postinstall.sh
+    vendor/bloom/prebuilt/common/bin/backuptool_ab.sh:$(TARGET_COPY_OUT_SYSTEM)/bin/backuptool_ab.sh \
+    vendor/bloom/prebuilt/common/bin/backuptool_ab.functions:$(TARGET_COPY_OUT_SYSTEM)/bin/backuptool_ab.functions \
+    vendor/bloom/prebuilt/common/bin/backuptool_postinstall.sh:$(TARGET_COPY_OUT_SYSTEM)/bin/backuptool_postinstall.sh
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/bin/backuptool_ab.sh \
+    system/bin/backuptool_ab.functions \
+    system/bin/backuptool_postinstall.sh
+
+ifneq ($(TARGET_BUILD_VARIANT),user)
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+    ro.ota.allow_downgrade=true
 endif
-
-# Backup Services whitelist
-PRODUCT_COPY_FILES += \
-    vendor/bloom/config/permissions/backup.xml:system/etc/sysconfig/backup.xml
+endif
 
 # Lineage-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
-    vendor/bloom/config/permissions/lineage-sysconfig.xml:system/etc/sysconfig/lineage-sysconfig.xml
+    vendor/bloom/config/permissions/lineage-sysconfig.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/lineage-sysconfig.xml
 
-# init.d support
+# Lineage-specific init rc file
 PRODUCT_COPY_FILES += \
-    vendor/bloom/prebuilt/common/etc/init.d/00banner:system/etc/init.d/00banner \
-    vendor/bloom/prebuilt/common/bin/sysinit:system/bin/sysinit
+    vendor/bloom/prebuilt/common/etc/init/init.lineage-system_ext.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.lineage-system_ext.rc
 
-ifneq ($(TARGET_BUILD_VARIANT),user)
-# userinit support
+# Enable Android Beam on all targets
 PRODUCT_COPY_FILES += \
-    vendor/bloom/prebuilt/common/etc/init.d/90userinit:system/etc/init.d/90userinit
-endif
-
-# Copy all Lineage-specific init rc files
-$(foreach f,$(wildcard vendor/bloom/prebuilt/common/etc/init/*.rc),\
-	$(eval PRODUCT_COPY_FILES += $(f):system/etc/init/$(notdir $f)))
-
-# Copy over added mimetype supported in libcore.net.MimeUtils
-PRODUCT_COPY_FILES += \
-    vendor/bloom/prebuilt/common/lib/content-types.properties:system/lib/content-types.properties
+    vendor/bloom/config/permissions/android.software.nfc.beam.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/android.software.nfc.beam.xml
 
 # Enable SIP+VoIP on all targets
 PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml
+    frameworks/native/data/etc/android.software.sip.voip.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/android.software.sip.voip.xml
 
 # Enable wireless Xbox 360 controller support
 PRODUCT_COPY_FILES += \
-    frameworks/base/data/keyboards/Vendor_045e_Product_028e.kl:system/usr/keylayout/Vendor_045e_Product_0719.kl
+    frameworks/base/data/keyboards/Vendor_045e_Product_028e.kl:$(TARGET_COPY_OUT_PRODUCT)/usr/keylayout/Vendor_045e_Product_0719.kl
 
-# This is Bloom!
+# This is Lineage!
 PRODUCT_COPY_FILES += \
-    vendor/bloom/config/permissions/org.lineageos.android.xml:system/etc/permissions/org.lineageos.android.xml \
-    vendor/bloom/config/permissions/privapp-permissions-lineage.xml:system/etc/permissions/privapp-permissions-lineage.xml \
-    vendor/bloom/config/permissions/privapp-permissions-cm-legacy.xml:system/etc/permissions/privapp-permissions-cm-legacy.xml
+    vendor/bloom/config/permissions/org.lineageos.android.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.android.xml
 
 # Enforce privapp-permissions whitelist
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     ro.control_privapp_permissions=enforce
 
-# Hidden API whitelist
-PRODUCT_COPY_FILES += \
-    vendor/bloom/config/permissions/lineage-hiddenapi-package-whitelist.xml:system/etc/permissions/lineage-hiddenapi-package-whitelist.xml
-
-# Power whitelist
-PRODUCT_COPY_FILES += \
-    vendor/bloom/config/permissions/lineage-power-whitelist.xml:system/etc/sysconfig/lineage-power-whitelist.xml
-
-# Include AOSP audio files
-include vendor/bloom/config/aosp_audio.mk
-
-# Include Lineage audio files
-include vendor/bloom/config/lineage_audio.mk
-
 ifneq ($(TARGET_DISABLE_LINEAGE_SDK), true)
 # Lineage SDK
-include vendor/bloom/config/lineage_sdk_common.mk
-endif
-
-# TWRP
-ifeq ($(WITH_TWRP),true)
-include vendor/bloom/config/twrp.mk
+include vendor/bloom/config/bloom_sdk_common.mk
 endif
 
 # Do not include art debug targets
@@ -119,58 +96,69 @@ PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD := false
 # leave less information available via JDWP.
 PRODUCT_MINIMIZE_JAVA_DEBUG_INFO := true
 
+# Disable vendor restrictions
+PRODUCT_RESTRICT_VENDOR_FILES := false
+
 # Bootanimation
+TARGET_SCREEN_WIDTH ?= 1080
+TARGET_SCREEN_HEIGHT ?= 1920
 PRODUCT_PACKAGES += \
     bootanimation.zip
 
-# Required Lineage packages
+# Build Manifest
+PRODUCT_PACKAGES += \
+    build-manifest
+
+# Lineage packages
 PRODUCT_PACKAGES += \
     LineageParts \
-    Development \
-    Profiles
-
-# Optional packages
-PRODUCT_PACKAGES += \
-    Terminal
-
-# Custom Lineage packages
-PRODUCT_PACKAGES += \
     LineageSettingsProvider \
     LineageSetupWizard \
     Updater
-
-# Custom Bloom packages
+    
+# Bloom packages
 PRODUCT_PACKAGES += \
-	BloomOSHub
+    BloomOSHub
+
+PRODUCT_COPY_FILES += \
+    vendor/bloom/prebuilt/common/etc/init/init.lineage-updater.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.lineage-updater.rc
+
+# Config
+PRODUCT_PACKAGES += \
+    SimpleDeviceConfig
 
 # Extra tools in Lineage
 PRODUCT_PACKAGES += \
     7z \
-    awk \
     bash \
-    bzip2 \
     curl \
     getcap \
     htop \
     lib7z \
-    libsepol \
+    nano \
     pigz \
-    powertop \
     setcap \
     unrar \
-    unzip \
     vim \
-    wget \
     zip
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/bin/curl \
+    system/bin/getcap \
+    system/bin/setcap
 
 # Filesystems tools
 PRODUCT_PACKAGES += \
-    fsck.exfat \
     fsck.ntfs \
-    mke2fs \
-    mkfs.exfat \
     mkfs.ntfs \
     mount.ntfs
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/bin/fsck.ntfs \
+    system/bin/mkfs.ntfs \
+    system/bin/mount.ntfs \
+    system/%/libfuse-lite.so \
+    system/%/libntfs-3g.so
 
 # Openssh
 PRODUCT_PACKAGES += \
@@ -182,6 +170,9 @@ PRODUCT_PACKAGES += \
     ssh-keygen \
     start-ssh
 
+PRODUCT_COPY_FILES += \
+    vendor/bloom/prebuilt/common/etc/init/init.openssh.rc:$(TARGET_COPY_OUT_PRODUCT)/etc/init/init.openssh.rc
+
 # rsync
 PRODUCT_PACKAGES += \
     rsync
@@ -192,12 +183,16 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
 
 # These packages are excluded from user builds
 PRODUCT_PACKAGES_DEBUG += \
-    micro_bench \
-    procmem \
-    procrank \
-    strace
+    procmem
 
-# Conditionally build in su
+ifneq ($(TARGET_BUILD_VARIANT),user)
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/bin/procmem
+endif
+
+# Root
+PRODUCT_PACKAGES += \
+    adb_root
 ifneq ($(TARGET_BUILD_VARIANT),user)
 ifeq ($(WITH_SU),true)
 PRODUCT_PACKAGES += \
@@ -205,145 +200,30 @@ PRODUCT_PACKAGES += \
 endif
 endif
 
-PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/bloom/overlay
-DEVICE_PACKAGE_OVERLAYS += vendor/bloom/overlay/common
+# Dex preopt
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    SystemUI
 
-PRODUCT_VERSION_MAJOR = 1
-PRODUCT_VERSION_MINOR = 0
-PRODUCT_VERSION_MAINTENANCE := 0
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/bloom/overlay/no-rro
+PRODUCT_PACKAGE_OVERLAYS += \
+    vendor/bloom/overlay/common \
+    vendor/bloom/overlay/no-rro
 
-ifeq ($(TARGET_VENDOR_SHOW_MAINTENANCE_VERSION),true)
-    BLOOM_VERSION_MAINTENANCE := $(PRODUCT_VERSION_MAINTENANCE)
-else
-    BLOOM_VERSION_MAINTENANCE := 0
-endif
+PRODUCT_PACKAGES += \
+    NetworkStackOverlay \
+    TrebuchetOverlay
 
-# Temporary: Set LINEAGE_VERSION_MAINTENANCE after BLOOM_VERSION_MAINTENANCE is set
-LINEAGE_VERSION_MAINTENANCE := $(BLOOM_VERSION_MAINTENANCE)
-
-# Set BLOOM_BUILDTYPE from the env RELEASE_TYPE, for jenkins compat
-
-ifndef BLOOM_BUILDTYPE
-    ifdef RELEASE_TYPE
-        # Starting with "BLOOM_" is optional
-        RELEASE_TYPE := $(shell echo $(RELEASE_TYPE) | sed -e 's|^BLOOM_||g')
-        BLOOM_BUILDTYPE := $(RELEASE_TYPE)
-    endif
-endif
-
-# Filter out random types, so it'll reset to UNOFFICIAL
-ifeq ($(filter RELEASE NIGHTLY SNAPSHOT EXPERIMENTAL,$(BLOOM_BUILDTYPE)),)
-    BLOOM_BUILDTYPE :=
-endif
-
-ifdef BLOOM_BUILDTYPE
-    ifneq ($(BLOOM_BUILDTYPE), SNAPSHOT)
-        ifdef BLOOM_EXTRAVERSION
-            # Force build type to EXPERIMENTAL
-            BLOOM_BUILDTYPE := EXPERIMENTAL
-            # Remove leading dash from BLOOM_EXTRAVERSION
-            BLOOM_EXTRAVERSION := $(shell echo $(BLOOM_EXTRAVERSION) | sed 's/-//')
-            # Add leading dash to BLOOM_EXTRAVERSION
-            BLOOM_EXTRAVERSION := -$(BLOOM_EXTRAVERSION)
-        endif
-    else
-        ifndef BLOOM_EXTRAVERSION
-            # Force build type to EXPERIMENTAL, SNAPSHOT mandates a tag
-            BLOOM_BUILDTYPE := EXPERIMENTAL
-        else
-            # Remove leading dash from BLOOM_EXTRAVERSION
-            BLOOM_EXTRAVERSION := $(shell echo $(BLOOM_EXTRAVERSION) | sed 's/-//')
-            # Add leading dash to BLOOM_EXTRAVERSION
-            BLOOM_EXTRAVERSION := -$(BLOOM_EXTRAVERSION)
-        endif
-    endif
-else
-    # If BLOOM_BUILDTYPE is not defined, set to UNOFFICIAL
-    BLOOM_BUILDTYPE := UNOFFICIAL
-    BLOOM_EXTRAVERSION :=
-endif
-
-ifeq ($(BLOOM_BUILDTYPE), UNOFFICIAL)
-    ifneq ($(TARGET_UNOFFICIAL_BUILD_ID),)
-        BLOOM_EXTRAVERSION := -$(TARGET_UNOFFICIAL_BUILD_ID)
-    endif
-endif
-
-ifeq ($(BLOOM_BUILDTYPE), RELEASE)
-    ifndef TARGET_VENDOR_RELEASE_BUILD_ID
-        BLOOM_VERSION := BloomOS$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(PRODUCT_VERSION_MAINTENANCE)$(PRODUCT_VERSION_DEVICE_SPECIFIC)-$(BLOOM_BUILD)
-    else
-        ifeq ($(TARGET_BUILD_VARIANT),user)
-            ifeq ($(BLOOM_VERSION_MAINTENANCE),0)
-                BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(BLOOM_BUILD)
-            else
-                BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(BLOOM_VERSION_MAINTENANCE)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(BLOOM_BUILD)
-            endif
-        else
-            BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(PRODUCT_VERSION_MAINTENANCE)$(PRODUCT_VERSION_DEVICE_SPECIFIC)-$(BLOOM_BUILD)
-        endif
-    endif
-else
-    ifeq ($(BLOOM_VERSION_MAINTENANCE),0)
-        ifeq ($(LINEAGE_VERSION_APPEND_TIME_OF_DAY),true)
-            BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(BLOOM_BUILDTYPE)$(BLOOM_EXTRAVERSION)-$(BLOOM_BUILD)-$(shell date -u +%Y%m%d_%H%M%S)
-        else
-            BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(BLOOM_BUILDTYPE)$(BLOOM_EXTRAVERSION)-$(BLOOM_BUILD)-$(shell date -u +%Y%m%d)
-        endif
-    else
-        ifeq ($(LINEAGE_VERSION_APPEND_TIME_OF_DAY),true)
-            BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(BLOOM_VERSION_MAINTENANCE)-$(BLOOM_BUILDTYPE)$(BLOOM_EXTRAVERSION)-$(BLOOM_BUILD)-$(shell date -u +%Y%m%d_%H%M%S)
-        else
-            BLOOM_VERSION := BloomOS-$(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(BLOOM_VERSION_MAINTENANCE)-$(BLOOM_BUILDTYPE)$(BLOOM_EXTRAVERSION)-$(BLOOM_BUILD)-$(shell date -u +%Y%m%d)
-        endif
-    endif
-endif
-
-# Temporary: Set LINEAGE_BUILDTYPE after BLOOM_BUILDTYPE is set
-LINEAGE_BUILDTYPE := $(BLOOM_BUILDTYPE)
-
-# Temporary: Set LINEAGE_VERSION after BLOOM_VERSION is set
-LINEAGE_VERSION := $(BLOOM_VERSION)
+# Translations
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/crowdin/overlay
+PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
 
 PRODUCT_EXTRA_RECOVERY_KEYS += \
-    vendor/bloom/build/target/product/security/bloom
+    vendor/bloom/build/target/product/security/lineage
+
+include vendor/bloom/config/version.mk
 
 -include vendor/lineage-priv/keys/keys.mk
 
-BLOOM_DISPLAY_VERSION := $(BLOOM_VERSION)
-
-ifneq ($(PRODUCT_DEFAULT_DEV_CERTIFICATE),)
-ifneq ($(PRODUCT_DEFAULT_DEV_CERTIFICATE),build/target/product/security/testkey)
-    ifneq ($(BLOOM_BUILDTYPE), UNOFFICIAL)
-        ifndef TARGET_VENDOR_RELEASE_BUILD_ID
-            ifneq ($(BLOOM_EXTRAVERSION),)
-                # Remove leading dash from BLOOM_EXTRAVERSION
-                BLOOM_EXTRAVERSION := $(shell echo $(BLOOM_EXTRAVERSION) | sed 's/-//')
-                TARGET_VENDOR_RELEASE_BUILD_ID := $(BLOOM_EXTRAVERSION)
-            else
-                TARGET_VENDOR_RELEASE_BUILD_ID := $(shell date -u +%Y%m%d)
-            endif
-        else
-            TARGET_VENDOR_RELEASE_BUILD_ID := $(TARGET_VENDOR_RELEASE_BUILD_ID)
-        endif
-        ifeq ($(BLOOM_VERSION_MAINTENANCE),0)
-            BLOOM_DISPLAY_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(BLOOM_BUILD)
-        else
-            BLOOM_DISPLAY_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(BLOOM_VERSION_MAINTENANCE)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(BLOOM_BUILD)
-        endif
-    endif
-endif
-endif
-
-# Temporary: Set LINEAGE_DISPLAY_VERSION after BLOOM_DISPLAY_VERSION is set
-LINEAGE_DISPLAY_VERSION := $(BLOOM_DISPLAY_VERSION)
-
-
-# Inherit BloomOS Properties
-include vendor/bloom/config/bloom.mk
-
-# Inherit BloomOS version
-include vendor/bloom/config/version.mk
-
 -include $(WORKSPACE)/build_env/image-auto-bits.mk
 -include vendor/bloom/config/partner_gms.mk
+

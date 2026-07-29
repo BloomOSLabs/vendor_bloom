@@ -1,7 +1,5 @@
-# Charger
-ifeq ($(WITH_LINEAGE_CHARGER),true)
-    BOARD_HAL_STATIC_LIBRARIES := libhealthd.lineage
-endif
+# Recovery
+BOARD_USES_FULL_RECOVERY_IMAGE ?= true
 
 include vendor/bloom/config/BoardConfigKernel.mk
 
@@ -10,3 +8,4 @@ include vendor/bloom/config/BoardConfigQcom.mk
 endif
 
 include vendor/bloom/config/BoardConfigSoong.mk
+

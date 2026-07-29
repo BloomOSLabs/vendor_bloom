@@ -9,7 +9,7 @@ familiar with [Repo](https://source.android.com/source/using-repo.html) and [Ver
 
 To initialize your local repository using the BloomOS trees, use a command like this:
 ```
-repo init -u git://github.com/BloomOSLabs/android_manifest.git -b bloom-1.0
+repo init -u git://github.com/BloomOSLabs/android_manifest.git -b bloom-2.0
 ```
 Then to sync up:
 ```
